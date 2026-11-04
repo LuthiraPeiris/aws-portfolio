@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Maze, Direction } from "@/lib/game/types";
-import { checkWallCollision, isValidCoordinate, isExitReached } from "@/lib/game/collision";
+import { checkWallCollision, isValidCoordinate, isExitReached, canMove } from "@/lib/game/collision";
 import { KEY_DIRECTION_MAP, DIRECTION_DELTA } from "@/lib/game/gameEngine";
 
 type MazeCanvasProps = {
@@ -58,18 +58,20 @@ export default function MazeCanvas({
     let previousTime = 0;
     let completed = false;
 
-    // Player state
+    // Player state with fully synchronized coordinates
     const player = {
       row: maze.start.row,
       col: maze.start.col,
+      fromRow: maze.start.row,
+      fromCol: maze.start.col,
+      targetRow: maze.start.row,
+      targetCol: maze.start.col,
       x: maze.start.col + 0.5,
       y: maze.start.row + 0.5,
       fromX: maze.start.col + 0.5,
       fromY: maze.start.row + 0.5,
       targetX: maze.start.col + 0.5,
       targetY: maze.start.row + 0.5,
-      targetRow: maze.start.row,
-      targetCol: maze.start.col,
       currentDir: null as Direction | null,
       moving: false,
       progress: 0,
@@ -152,6 +154,8 @@ export default function MazeCanvas({
       }
 
       player.currentDir = dir;
+      player.fromRow = player.row;
+      player.fromCol = player.col;
       player.fromX = player.col + 0.5;
       player.fromY = player.row + 0.5;
       player.targetX = nextCol + 0.5;
@@ -177,18 +181,15 @@ export default function MazeCanvas({
       pushHeldDirection(dir);
 
       if (!player.moving) {
-        // From rest: check wall collision
-        const currentCell = maze.cells[player.row][player.col];
-        if (checkWallCollision(currentCell, dir)) {
+        // From rest: attempt move or trigger sparks on wall collision
+        if (!startMoveTo(dir, 0)) {
           spawnWallSparks(dir);
-          return;
         }
-        startMoveTo(dir, 0);
       } else if (player.currentDir) {
         // If moving, check for instant reverse
         const opposite = getOppositeDirection(player.currentDir);
         if (dir === opposite) {
-          // Instant smooth reverse back towards previous cell
+          // Instant smooth reverse swapping origin and destination cleanly
           player.currentDir = dir;
           const tempX = player.fromX;
           const tempY = player.fromY;
@@ -196,8 +197,14 @@ export default function MazeCanvas({
           player.fromY = player.targetY;
           player.targetX = tempX;
           player.targetY = tempY;
-          player.targetRow = player.row;
-          player.targetCol = player.col;
+
+          const tempRow = player.fromRow;
+          const tempCol = player.fromCol;
+          player.fromRow = player.targetRow;
+          player.fromCol = player.targetCol;
+          player.targetRow = tempRow;
+          player.targetCol = tempCol;
+
           player.progress = Math.max(0, 1 - player.progress);
           bufferedInput = null;
         } else {
@@ -228,7 +235,6 @@ export default function MazeCanvas({
 
       const map = KEY_DIRECTION_MAP[event.key];
       if (map) {
-        // Check if any other key holding this direction is still pressed
         let stillHeld = false;
         for (const [k, v] of Object.entries(KEY_DIRECTION_MAP)) {
           if (v.wall === map.wall && activeKeys.has(k.toLowerCase())) {
@@ -381,21 +387,29 @@ export default function MazeCanvas({
           const x = offsetX + col * cellSize;
           const y = offsetY + row * cellSize;
 
-          if (cell.top) {
+          // Top wall: draw outer top boundary or top wall if not already drawn by cell above
+          if (cell.top && (row === 0 || !maze.cells[row - 1][col].bottom)) {
             ctx.moveTo(x, y);
             ctx.lineTo(x + cellSize, y);
           }
+
+          // Left wall: vertical line from top (x, y) to bottom (x, y + cellSize)
+          // Drawn for outer left boundary or if not already drawn by cell to the left
+          if (cell.left && (col === 0 || !maze.cells[row][col - 1].right)) {
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + cellSize);
+          }
+
+          // Right wall: vertical line from (x + cellSize, y) to (x + cellSize, y + cellSize)
           if (cell.right) {
             ctx.moveTo(x + cellSize, y);
             ctx.lineTo(x + cellSize, y + cellSize);
           }
+
+          // Bottom wall: horizontal line from (x, y + cellSize) to (x + cellSize, y + cellSize)
           if (cell.bottom) {
             ctx.moveTo(x, y + cellSize);
             ctx.lineTo(x + cellSize, y + cellSize);
-          }
-          if (cell.left) {
-            ctx.moveTo(x, y);
-            ctx.lineTo(x, y + cellSize);
           }
         }
       }
@@ -604,11 +618,13 @@ export default function MazeCanvas({
           player.progress += delta / CELL_DURATION_MS;
 
           if (player.progress >= 1) {
-            // Reached target cell
+            // Reached target cell center
             const overflowMs = (player.progress - 1) * CELL_DURATION_MS;
 
             player.row = player.targetRow;
             player.col = player.targetCol;
+            player.fromRow = player.targetRow;
+            player.fromCol = player.targetCol;
             player.x = player.col + 0.5;
             player.y = player.row + 0.5;
 
@@ -619,13 +635,12 @@ export default function MazeCanvas({
               completeRef.current?.();
             } else {
               // Determine next direction seamlessly
-              const currentCell = maze.cells[player.row][player.col];
               let nextDir: Direction | null = null;
 
               // 1. Check buffered input if still fresh
               if (bufferedInput) {
                 if (currentTime - bufferedInput.time <= INPUT_BUFFER_WINDOW_MS) {
-                  if (!checkWallCollision(currentCell, bufferedInput.dir)) {
+                  if (canMove(maze, player.row, player.col, bufferedInput.dir)) {
                     nextDir = bufferedInput.dir;
                   }
                 }
@@ -636,7 +651,7 @@ export default function MazeCanvas({
               if (!nextDir && heldDirections.length > 0) {
                 for (let i = heldDirections.length - 1; i >= 0; i--) {
                   const candidate = heldDirections[i];
-                  if (!checkWallCollision(currentCell, candidate)) {
+                  if (canMove(maze, player.row, player.col, candidate)) {
                     nextDir = candidate;
                     break;
                   }
@@ -645,16 +660,19 @@ export default function MazeCanvas({
 
               // 3. Check if current direction can continue gliding
               if (!nextDir && player.currentDir && heldDirections.includes(player.currentDir)) {
-                if (!checkWallCollision(currentCell, player.currentDir)) {
+                if (canMove(maze, player.row, player.col, player.currentDir)) {
                   nextDir = player.currentDir;
                 }
               }
 
+              let moved = false;
               if (nextDir) {
                 // Seamlessly continue into next cell carrying forward any delta overflow
                 const initialProgress = overflowMs / CELL_DURATION_MS;
-                startMoveTo(nextDir, initialProgress);
-              } else {
+                moved = startMoveTo(nextDir, initialProgress);
+              }
+
+              if (!moved) {
                 // Came to a full stop at cell center
                 player.moving = false;
                 player.currentDir = null;
@@ -663,26 +681,23 @@ export default function MazeCanvas({
                 // If player was holding keys into a wall, spawn subtle sparks
                 if (heldDirections.length > 0) {
                   const lastHeld = heldDirections[heldDirections.length - 1];
-                  if (checkWallCollision(currentCell, lastHeld)) {
-                    spawnWallSparks(lastHeld);
-                  }
+                  spawnWallSparks(lastHeld);
                 }
               }
             }
           } else {
-             // Constant-speed linear interpolation for continuous movement.
-              const p = Math.max(0, Math.min(1, player.progress));
+            // Constant-speed linear interpolation for continuous movement.
+            const p = Math.max(0, Math.min(1, player.progress));
 
-              player.x = player.fromX + (player.targetX - player.fromX) * p;
-              player.y = player.fromY + (player.targetY - player.fromY) * p;
+            player.x = player.fromX + (player.targetX - player.fromX) * p;
+            player.y = player.fromY + (player.targetY - player.fromY) * p;
           }
         } else {
           // Player is at rest: check if any held key can start movement
           if (heldDirections.length > 0) {
-            const currentCell = maze.cells[player.row][player.col];
             for (let i = heldDirections.length - 1; i >= 0; i--) {
               const candidate = heldDirections[i];
-              if (!checkWallCollision(currentCell, candidate)) {
+              if (canMove(maze, player.row, player.col, candidate)) {
                 startMoveTo(candidate, 0);
                 break;
               }
