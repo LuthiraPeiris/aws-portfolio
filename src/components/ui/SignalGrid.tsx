@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import type { ISourceOptions } from "@tsparticles/engine";
 import { MoveDirection, OutMode } from "@tsparticles/engine";
@@ -8,6 +9,7 @@ import { loadSlim } from "@tsparticles/slim";
 
 export function SignalGrid() {
   const [init, setInit] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     initParticlesEngine(async (engine) => {
@@ -64,6 +66,7 @@ export function SignalGrid() {
         },
       },
       interactivity: {
+        detectsOn: "window",
         events: {
           onHover: {
             enable: true,
@@ -86,6 +89,7 @@ export function SignalGrid() {
     []
   );
 
+  if (pathname === "/playground") return null;
   if (!init) return null;
 
   return (
