@@ -12,6 +12,10 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
+  if (pathname === "/playground") {
+  return null;
+}
+
   const navLinks = [
     { name: "Home", href: "/" },
     { name: "About", href: "/about" },
