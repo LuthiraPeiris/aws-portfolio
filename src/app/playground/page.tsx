@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function PlaygroundPage() {
   return (
-    <main className="min-h-screen bg-[#111827]">
+    <main className="fixed inset-0 z-[100] h-dvh w-full overflow-hidden bg-[#111827]">
       <NeonMaze />
     </main>
   );

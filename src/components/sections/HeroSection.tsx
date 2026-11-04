@@ -19,7 +19,6 @@ import {
   Server,
 } from "lucide-react";
 import { siteConfig } from "@/data/site";
-import { SitesCraftSolutionsPopup } from "@/components/ui/SitesCraftSolutionsPopup";
 
 function InfinityIcon({
   icon: Icon,
@@ -119,7 +118,6 @@ export function HeroSection() {
 
   return (
     <section className="section relative overflow-hidden">
-      <SitesCraftSolutionsPopup />
       {/* subtle background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute left-1/2 top-16 h-72 w-72 -translate-x-1/2 rounded-full bg-emerald-200/30 blur-3xl" />

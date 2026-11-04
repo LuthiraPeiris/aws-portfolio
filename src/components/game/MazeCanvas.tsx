@@ -17,77 +17,120 @@ export default function MazeCanvas({ maze }: MazeCanvasProps) {
 
     if (!canvas || !ctx) return;
 
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
+    const drawMaze = () => {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (!width || !height) return;
 
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    ctx.scale(dpr, dpr);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
 
-    const cellWidth = width / maze.cols;
-    const cellHeight = height / maze.rows;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Background
-    ctx.fillStyle = "#202020";
-    ctx.fillRect(0, 0, width, height);
+      // Background
+      ctx.fillStyle = "#202020";
+      ctx.fillRect(0, 0, width, height);
 
-    // Maze walls
-    ctx.strokeStyle = "#00E5D4";
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.shadowColor = "#00F5E9";
-    ctx.shadowBlur = 7;
+      // Calculate square cell size
+      const cellSize = Math.min(
+        width / maze.cols,
+        height / maze.rows
+      );
 
-    for (let row = 0; row < maze.rows; row++) {
-      for (let col = 0; col < maze.cols; col++) {
-        const cell = maze.cells[row][col];
+      // Center the maze
+      const mazeWidth = cellSize * maze.cols;
+      const mazeHeight = cellSize * maze.rows;
 
-        const x = col * cellWidth;
-        const y = row * cellHeight;
+      const offsetX = (width - mazeWidth) / 2;
+      const offsetY = (height - mazeHeight) / 2;
 
-        ctx.beginPath();
+      // Draw maze walls
+      ctx.strokeStyle = "#00E5D4";
+      ctx.lineWidth = Math.max(2, Math.min(3, cellSize * 0.055));
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.shadowColor = "#00F5E9";
+      ctx.shadowBlur = 8;
 
-        if (cell.top) {
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + cellWidth, y);
+      for (let row = 0; row < maze.rows; row++) {
+        for (let col = 0; col < maze.cols; col++) {
+          const cell = maze.cells[row][col];
+
+          const x = offsetX + col * cellSize;
+          const y = offsetY + row * cellSize;
+
+          ctx.beginPath();
+
+          if (cell.top) {
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + cellSize, y);
+          }
+
+          if (cell.right) {
+            ctx.moveTo(x + cellSize, y);
+            ctx.lineTo(x + cellSize, y + cellSize);
+          }
+
+          if (cell.bottom) {
+            ctx.moveTo(x, y + cellSize);
+            ctx.lineTo(x + cellSize, y + cellSize);
+          }
+
+          if (cell.left) {
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + cellSize);
+          }
+
+          ctx.stroke();
         }
-
-        if (cell.right) {
-          ctx.moveTo(x + cellWidth, y);
-          ctx.lineTo(x + cellWidth, y + cellHeight);
-        }
-
-        if (cell.bottom) {
-          ctx.moveTo(x, y + cellHeight);
-          ctx.lineTo(x + cellWidth, y + cellHeight);
-        }
-
-        if (cell.left) {
-          ctx.moveTo(x, y);
-          ctx.lineTo(x, y + cellHeight);
-        }
-
-        ctx.stroke();
       }
-    }
 
-    // Entrance and exit indicators
-    ctx.shadowBlur = 12;
+      // Entrance indicator
+      ctx.shadowColor = "#22C55E";
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = "#22C55E";
 
-    ctx.fillStyle = "#22C55E";
-    ctx.fillRect(3, 3, 5, 5);
+      ctx.beginPath();
+      ctx.arc(
+        offsetX + cellSize / 2,
+        offsetY + cellSize / 2,
+        Math.max(3, cellSize * 0.12),
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
 
-    ctx.fillStyle = "#00F5E9";
-    ctx.fillRect(
-      (maze.cols - 1) * cellWidth + cellWidth - 8,
-      (maze.rows - 1) * cellHeight + cellHeight - 8,
-      5,
-      5
-    );
+      // Exit indicator
+      ctx.shadowColor = "#00F5E9";
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = "#00F5E9";
 
+      ctx.beginPath();
+      ctx.arc(
+        offsetX + (maze.cols - 0.5) * cellSize,
+        offsetY + (maze.rows - 0.5) * cellSize,
+        Math.max(3, cellSize * 0.15),
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+    };
+
+    // Initial drawing
+    drawMaze();
+
+    // Redraw when the canvas container changes size
+    const resizeObserver = new ResizeObserver(drawMaze);
+    resizeObserver.observe(canvas);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, [maze]);
 
   return (
