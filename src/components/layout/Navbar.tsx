@@ -17,13 +17,14 @@ export function Navbar() {
 }
 
   const navLinks = [
-    { name: "Home", href: "/" },
-    { name: "About", href: "/about" },
-    { name: "Projects", href: "/projects" },
-    { name: "Volunteering", href: "/volunteering" },
-    { name: "Articles", href: "/articles" },
-    { name: "Contact", href: "/contact" },
-  ];
+  { name: "Home", href: "/" },
+  { name: "About", href: "/about" },
+  { name: "Projects", href: "/projects" },
+  { name: "Playground", href: "/playground" },
+  { name: "Volunteering", href: "/volunteering" },
+  { name: "Articles", href: "/articles" },
+  { name: "Contact", href: "/contact" },
+];
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
