@@ -12,6 +12,7 @@ export const siteConfig = {
     linkedin: "https://www.linkedin.com/in/luthirapeiris/",
     github: "https://github.com/LuthiraPeiris",
     medium: "https://medium.com/@luthirapeiris1",
+    youtube: "https://youtube.com/@cloudwithluthi?si=WxnErBJHytrDFNnR",
     sitescraftsolutions: "https://www.sitescraftsolutions.com/",
   },
 };

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { siteConfig } from "@/data/site";
-import { FaLinkedin, FaGithub, FaMedium } from "react-icons/fa";
+import { FaLinkedin, FaGithub, FaMedium, FaYoutube } from "react-icons/fa";
 
 export function Footer() {
   return (
@@ -45,6 +45,16 @@ export function Footer() {
             className="p-2 text-slate-600 hover:text-slate-900 hover:scale-110 transition"
           >
             <FaMedium size={18} />
+          </a>
+
+          <a
+            href={siteConfig.social.youtube}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="YouTube"
+            className="p-2 text-slate-600 hover:text-red-600 hover:scale-110 transition"
+          >
+            <FaYoutube size={18} />
           </a>
 
           <a

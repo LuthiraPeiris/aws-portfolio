@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { FaLinkedin, FaGithub, FaMedium } from "react-icons/fa";
+import { FaLinkedin, FaGithub, FaMedium, FaYoutube } from "react-icons/fa";
 import { siteConfig } from "@/data/site";
 
 export function Navbar() {
@@ -100,6 +100,16 @@ export function Navbar() {
             </a>
 
             <a
+              href={siteConfig.social.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="YouTube"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white/80 text-slate-600 transition hover:-translate-y-0.5 hover:scale-110 hover:text-red-600"
+            >
+              <FaYoutube size={18} />
+            </a>
+
+            <a
               href={siteConfig.social.sitescraftsolutions}
               target="_blank"
               rel="noopener noreferrer"
@@ -179,6 +189,16 @@ export function Navbar() {
                 className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600"
               >
                 <FaMedium size={17} />
+              </a>
+
+              <a
+                href={siteConfig.social.youtube}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="YouTube"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-red-600"
+              >
+                <FaYoutube size={18} />
               </a>
 
               <a
